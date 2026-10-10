@@ -30,8 +30,12 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
+    # Wildcard origins with allow_credentials=True are rejected by browsers
+    # (the fetch spec forbids ACAO:* on credentialed requests) and advertise a
+    # credential channel this API never uses - no cookies, no HTTP auth. The
+    # Android client is not a browser and is unaffected either way.
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )

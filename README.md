@@ -45,6 +45,9 @@ Get a key from [SerpApi](https://serpapi.com/).
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
+On Render (and similar hosts) the `Procfile` starts the server and honours the
+host-provided `PORT` environment variable, falling back to `8000` locally.
+
 ### 4. Access API Docs
 
 Open http://localhost:8000/docs in your browser for interactive Swagger UI.
@@ -73,9 +76,12 @@ Request body:
 {
   "latitude": 11.9332,
   "longitude": 79.5241,
-  "incidentType": "possible_accident"
+  "incident_type": "possible_accident"
 }
 ```
+
+> **Field name:** the request field is `incident_type` (snake_case), matching
+> the Android client. A camelCase `incidentType` key is rejected with `422`.
 
 Response:
 ```json

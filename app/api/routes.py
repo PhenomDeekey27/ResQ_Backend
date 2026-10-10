@@ -14,6 +14,23 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/emergency-resources", tags=["Emergency Resources"])
 
 
+def _has_valid_coordinates(coords) -> bool:
+    """
+    True only for a coordinates mapping that carries both numeric keys.
+
+    Upstream normalizers usually guarantee this, but a partial dict (missing
+    longitude, None values) used to be indexed directly and turned one odd
+    result into a KeyError 500 for the whole search.
+    """
+    return (
+        isinstance(coords, dict)
+        and "latitude" in coords
+        and "longitude" in coords
+        and coords["latitude"] is not None
+        and coords["longitude"] is not None
+    )
+
+
 def _deduplicate_resources(resources: list) -> list:
     """
     Deduplicate resources that appear in both hospital and emergency_care searches.
@@ -45,7 +62,7 @@ def _deduplicate_resources(resources: list) -> list:
                 continue
             
             # Check coordinate match (within ~100m = 0.1 km)
-            if coords and existing_coords:
+            if _has_valid_coordinates(coords) and _has_valid_coordinates(existing_coords):
                 distance = calculate_distance_km(
                     coords["latitude"], coords["longitude"],
                     existing_coords["latitude"], existing_coords["longitude"]
@@ -109,7 +126,7 @@ async def search_emergency_resources(request: SearchRequest) -> SearchResponse:
         coords = result.get("coordinates")
         distance = None
 
-        if coords:
+        if _has_valid_coordinates(coords):
             distance = calculate_distance_km(
                 lat, lon, coords["latitude"], coords["longitude"]
             )
@@ -122,7 +139,7 @@ async def search_emergency_resources(request: SearchRequest) -> SearchResponse:
                 type=result.get("type", "hospital"),
                 address=result.get("address"),
                 phone=result.get("phone"),
-                coordinates=Coordinates(**coords) if coords else None,
+                coordinates=Coordinates(**coords) if _has_valid_coordinates(coords) else None,
                 rating=result.get("rating"),
                 distance_km=round(distance, 2),
             )

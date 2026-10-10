@@ -61,7 +61,10 @@ async def search_google_maps(
         logger.error("SerpApi request timed out")
         raise SerpApiError("Upstream request timed out", status_code=504)
     except httpx.RequestError as e:
-        logger.error(f"SerpApi request failed: {e}")
+        # str(e) for httpx request errors embeds the full request URL, which
+        # carries the api_key query parameter. Log only the exception type so a
+        # crash report or log stream can never leak the SerpApi key.
+        logger.error(f"SerpApi request failed: {type(e).__name__}")
         raise SerpApiError("Upstream request failed", status_code=502)
 
     if response.status_code == 429:
